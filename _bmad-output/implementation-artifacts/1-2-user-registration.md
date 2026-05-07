@@ -1,6 +1,6 @@
 # Story 1.2: User Registration
 
-Status: dev-complete
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -340,10 +340,26 @@ def test_register_short_password(test_client, test_db):
 
 ### Agent Model Used
 
-_to be filled by dev agent_
+claude-sonnet-4.6
 
 ### Debug Log References
 
+- Flask 3.x reuses parent app context for test requests → `g._login_user` persists; fixed by pushing fresh `app_context()` per test
+- Template `url_for('auth.login')` needed stub route (Story 1.3 placeholder added)
+- `test_register_duplicate_email` needed direct DB insert to avoid login side-effect from first POST
+
 ### Completion Notes List
 
+- All 7 AC tests pass; 11/11 suite green
+- Stub `/auth/login` added to routes.py (Story 1.3 will replace)
+- Migrations initialized and applied; `users` table created
+
 ### File List
+
+- `app/models/user.py` — NEW
+- `app/models/__init__.py` — UPDATED
+- `app/blueprints/auth/forms.py` — NEW
+- `app/blueprints/auth/routes.py` — UPDATED
+- `app/templates/auth/register.html` — NEW
+- `tests/test_auth.py` — NEW
+- `migrations/` — INITIALIZED + migration `9953be62afb7_add_users_table.py`
