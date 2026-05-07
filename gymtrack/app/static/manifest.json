@@ -1,0 +1,9 @@
+{
+  "name": "GymTrack",
+  "short_name": "GymTrack",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2d6a4f",
+  "icons": []
+}

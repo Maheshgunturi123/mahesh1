@@ -1,0 +1,115 @@
+# generated: 2026-05-04
+# last_updated: 2026-05-04
+# project: GymTrack
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-05-04
+last_updated: 2026-05-05T23:25:03+05:30
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # ─────────────────────────────────────────────
+  # Epic 1: Project Foundation & User Authentication
+  # ─────────────────────────────────────────────
+  epic-1: in-progress
+  1-1-project-scaffold-and-base-configuration: review
+  1-2-user-registration: ready-for-dev
+  1-3-user-login-and-logout: review
+  1-4-password-reset-via-email: ready-for-dev
+  1-5-user-profile-view-and-edit: ready-for-dev
+  1-6-cicd-pipeline-deployment-and-error-monitoring: ready-for-dev
+  epic-1-retrospective: optional
+
+  # ─────────────────────────────────────────────
+  # Epic 2: Exercise Library
+  # ─────────────────────────────────────────────
+  epic-2: in-progress
+  2-1-exercise-library-browse: ready-for-dev
+  2-2-exercise-search-and-filter: done
+  2-3-admin-exercise-management: ready-for-dev
+  epic-2-retrospective: optional
+
+  # ─────────────────────────────────────────────
+  # Epic 3: Workout Planning
+  # ─────────────────────────────────────────────
+  epic-3: in-progress
+  3-1-create-workout-plan: ready-for-dev
+  3-2-add-exercises-to-a-plan: ready-for-dev
+  3-3-edit-and-reorder-plan-exercises: ready-for-dev
+  3-4-delete-plan-and-view-all-plans: backlog
+  epic-3-retrospective: optional
+
+  # ─────────────────────────────────────────────
+  # Epic 4: Workout Logging & Auto-Save
+  # ─────────────────────────────────────────────
+  epic-4: in-progress
+  4-1-start-a-workout-session: review
+  4-2-log-sets-with-auto-save: review
+  4-3-resume-an-interrupted-session: ready-for-dev
+  4-4-complete-a-session: ready-for-dev
+  4-5-session-history: ready-for-dev
+  epic-4-retrospective: optional
+
+  # ─────────────────────────────────────────────
+  # Epic 5: Personal Record Detection & Notifications
+  # ─────────────────────────────────────────────
+  epic-5: in-progress
+  5-1-pr-detection-service: ready-for-dev
+  5-2-matched-pr-detection: ready-for-dev
+  5-3-pr-notification-on-post-workout-summary: review
+  5-4-view-all-personal-records: ready-for-dev
+  epic-5-retrospective: optional
+
+  # ─────────────────────────────────────────────
+  # Epic 6: Progress Tracking & Charts
+  # ─────────────────────────────────────────────
+  epic-6: in-progress
+  6-1-strength-progression-chart: ready-for-dev
+  6-2-workout-frequency-chart: review
+  6-3-volume-trend-chart: ready-for-dev
+  6-4-chart-time-period-filter: ready-for-dev
+  epic-6-retrospective: optional
+
+  # ─────────────────────────────────────────────
+  # Epic 7: Dashboard, Admin & Operations
+  # ─────────────────────────────────────────────
+  epic-7: in-progress
+  7-1-personal-dashboard: ready-for-dev
+  7-2-workout-streak-display: review
+  7-3-re-engagement-prompt-for-inactive-users: ready-for-dev
+  7-4-admin-user-management: ready-for-dev
+  7-5-admin-platform-health-dashboard: ready-for-dev
+  epic-7-retrospective: optional
