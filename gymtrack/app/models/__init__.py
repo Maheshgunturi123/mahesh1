@@ -1,1 +1,1 @@
-# Models will be defined here in future stories
+from app.models.user import User  # noqa: F401
