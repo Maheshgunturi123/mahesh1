@@ -117,10 +117,7 @@ jobs:
 
           echo "🤖 Invoking BMad dev-story skill on: $STORY_FILE"
 
-          gh copilot suggest --shell-out \
-            "dev this story $STORY_FILE" \
-            --model "${{ inputs.model }}" || \
-          gh copilot explain "implement the story at $STORY_FILE following the bmad-dev-story skill: read the story file, implement all tasks and acceptance criteria, and write the code" || true
+          copilot -p 'implement the story at the given story file following bmad-dev-story skill read the story file implement all tasks and acceptance criteria and write the code' --yolo
 
           echo "✅ BMad dev agent execution complete"
 
