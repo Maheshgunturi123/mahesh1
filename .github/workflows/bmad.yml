@@ -110,6 +110,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COPILOT_CLI_MODEL: ${{ inputs.model }}
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: |
           STORY_FILE="${{ inputs.story_file }}"
           STORY_BASENAME=$(basename "$STORY_FILE" .md)
