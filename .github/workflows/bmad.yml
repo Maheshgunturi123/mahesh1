@@ -120,11 +120,8 @@ jobs:
 
           echo "🤖 Invoking BMad dev-story skill on: $STORY_FILE"
 
-          gh copilot suggest \
-            --target bash \
-            "dev this story $STORY_FILE: read the story file, implement all tasks and acceptance criteria, and write the code" || \
-          gh copilot explain \
-            "implement the story at $STORY_FILE following bmad-dev-story skill: read the story file, implement all tasks and acceptance criteria, and write the code" || true
+          gh copilot suggest -p "dev this story $STORY_FILE: read the story file, implement all tasks and acceptance criteria, and write the code" || \
+          gh copilot explain -p "implement the story at $STORY_FILE following bmad-dev-story skill: read the story file, implement all tasks and acceptance criteria, and write the code" || true
 
           echo "✅ BMad dev agent execution complete"
 
