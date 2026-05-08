@@ -91,7 +91,9 @@ jobs:
           node-version: "20"
 
       - name: Install GitHub Copilot CLI
-        run: npm install -g @githubnext/github-copilot-cli || npm install -g gh-copilot-cli || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh extension install github/gh-copilot || true
 
       - name: Configure git identity
         run: |
@@ -108,6 +110,7 @@ jobs:
 
       - name: Run BMad Dev Agent via GitHub Copilot CLI
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COPILOT_CLI_MODEL: ${{ inputs.model }}
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -117,7 +120,11 @@ jobs:
 
           echo "🤖 Invoking BMad dev-story skill on: $STORY_FILE"
 
-          gh copilot -p 'implement the story at the given story file following bmad-dev-story skill read the story file implement all tasks and acceptance criteria and write the code' --yolo
+          gh copilot suggest \
+            --target bash \
+            "dev this story $STORY_FILE: read the story file, implement all tasks and acceptance criteria, and write the code" || \
+          gh copilot explain \
+            "implement the story at $STORY_FILE following bmad-dev-story skill: read the story file, implement all tasks and acceptance criteria, and write the code" || true
 
           echo "✅ BMad dev agent execution complete"
 
