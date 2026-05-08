@@ -1,0 +1,240 @@
+name: BMad Dev Agent - Implement Story
+
+on:
+  workflow_dispatch:
+    inputs:
+      story_file:
+        description: >
+          Path to the story file relative to repo root
+          (e.g. _bmad-output/implementation-artifacts/1-2-user-registration.md)
+        required: true
+        type: string
+      branch_name:
+        description: >
+          Branch to commit changes to (leave blank to auto-generate from story name)
+        required: false
+        type: string
+      model:
+        description: "Copilot model to use"
+        required: false
+        default: "claude-sonnet-4.5"
+        type: choice
+        options:
+          - claude-sonnet-4.5
+          - claude-sonnet-4.6
+          - claude-opus-4.5
+          - gpt-4.1
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  implement-story:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate story file exists
+        run: |
+          STORY_FILE="${{ inputs.story_file }}"
+          if [ ! -f "$STORY_FILE" ]; then
+            echo "❌ Story file not found: $STORY_FILE"
+            echo "Available story files:"
+            find _bmad-output/implementation-artifacts -name "*.md" | sort
+            exit 1
+          fi
+          echo "✅ Story file found: $STORY_FILE"
+
+      - name: Determine target branch
+        id: branch
+        run: |
+          if [ -n "${{ inputs.branch_name }}" ]; then
+            BRANCH="${{ inputs.branch_name }}"
+          else
+            # Auto-generate branch name from story file name
+            STORY_BASENAME=$(basename "${{ inputs.story_file }}" .md)
+            BRANCH="bmad/story-${STORY_BASENAME}"
+          fi
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "🌿 Target branch: $BRANCH"
+
+      - name: Create or switch to feature branch
+        run: |
+          BRANCH="${{ steps.branch.outputs.branch }}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+            echo "Branch $BRANCH already exists remotely, checking out..."
+            git checkout -b "$BRANCH" "origin/$BRANCH"
+          else
+            echo "Creating new branch: $BRANCH"
+            git checkout -b "$BRANCH"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Set up Node.js (for Copilot CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install GitHub Copilot CLI
+        run: npm install -g @githubnext/github-copilot-cli || npm install -g gh-copilot-cli || true
+
+      - name: Configure git identity
+        run: |
+          git config user.name "BMad Dev Agent"
+          git config user.email "bmad-agent@users.noreply.github.com"
+
+      - name: Display story contents
+        run: |
+          echo "=========================================="
+          echo "📖 Story: ${{ inputs.story_file }}"
+          echo "=========================================="
+          cat "${{ inputs.story_file }}"
+          echo "=========================================="
+
+      - name: Run BMad Dev Agent via GitHub Copilot CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_CLI_MODEL: ${{ inputs.model }}
+        run: |
+          STORY_FILE="${{ inputs.story_file }}"
+          STORY_BASENAME=$(basename "$STORY_FILE" .md)
+
+          echo "🤖 Invoking BMad dev-story skill on: $STORY_FILE"
+
+          gh copilot suggest --shell-out \
+            "dev this story $STORY_FILE" \
+            --model "${{ inputs.model }}" || \
+          gh copilot explain "implement the story at $STORY_FILE following the bmad-dev-story skill: read the story file, implement all tasks and acceptance criteria, and write the code" || true
+
+          echo "✅ BMad dev agent execution complete"
+
+      - name: Stage all changes
+        id: changes
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ No file changes detected"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "📦 Changes staged:"
+            git diff --cached --stat
+          fi
+
+      - name: Commit changes
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          STORY_BASENAME=$(basename "${{ inputs.story_file }}" .md)
+          git commit -m "feat: implement story ${STORY_BASENAME}
+
+          Implemented via BMad Dev Agent (bmad-dev-story skill).
+          Story file: ${{ inputs.story_file }}
+          Model: ${{ inputs.model }}
+          Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          Co-authored-by: BMad Dev Agent <bmad-agent@users.noreply.github.com>
+          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+
+      - name: Update story status to in-progress (if not already)
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          STORY_BASENAME=$(basename "${{ inputs.story_file }}" .md)
+          SPRINT_FILE="_bmad-output/implementation-artifacts/sprint-status.yaml"
+
+          if [ -f "$SPRINT_FILE" ]; then
+            # Update story status from ready-for-dev to in-progress
+            sed -i "s/${STORY_BASENAME}: ready-for-dev/${STORY_BASENAME}: in-progress/" "$SPRINT_FILE"
+            git add "$SPRINT_FILE"
+            if ! git diff --cached --quiet; then
+              git commit -m "chore: mark ${STORY_BASENAME} as in-progress
+
+              Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+            fi
+          fi
+
+      - name: Push branch to GitHub
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          BRANCH="${{ steps.branch.outputs.branch }}"
+          git push origin "$BRANCH"
+          echo "✅ Pushed to branch: $BRANCH"
+          echo ""
+          echo "🔗 View branch: ${{ github.server_url }}/${{ github.repository }}/tree/$BRANCH"
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ steps.branch.outputs.branch }}"
+          STORY_BASENAME=$(basename "${{ inputs.story_file }}" .md)
+          DEFAULT_BRANCH=$(git remote show origin | grep "HEAD branch" | awk '{print $NF}')
+
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "ℹ️ PR #$EXISTING_PR already exists for branch $BRANCH"
+          else
+            gh pr create \
+              --title "feat: implement story ${STORY_BASENAME}" \
+              --body "## Story Implementation
+
+          **Story:** \`${{ inputs.story_file }}\`
+          **Model:** \`${{ inputs.model }}\`
+          **Implemented by:** BMad Dev Agent via GitHub Actions
+
+          ### Story
+          $(cat '${{ inputs.story_file }}' | head -50)
+
+          ---
+          *Auto-generated by [BMad Dev Agent workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*" \
+              --base "$DEFAULT_BRANCH" \
+              --head "$BRANCH" \
+              --label "bmad-agent" 2>/dev/null || \
+            gh pr create \
+              --title "feat: implement story ${STORY_BASENAME}" \
+              --body "Implemented story \`${{ inputs.story_file }}\` via BMad Dev Agent. Workflow run: ${{ github.run_id }}" \
+              --base "$DEFAULT_BRANCH" \
+              --head "$BRANCH"
+
+            echo "✅ Pull Request created"
+          fi
+
+      - name: Summary
+        run: |
+          BRANCH="${{ steps.branch.outputs.branch }}"
+          HAS_CHANGES="${{ steps.changes.outputs.has_changes }}"
+          echo "## BMad Dev Agent - Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Story | \`${{ inputs.story_file }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`$BRANCH\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Model | \`${{ inputs.model }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Changes committed | $HAS_CHANGES |" >> $GITHUB_STEP_SUMMARY
+          if [ "$HAS_CHANGES" = "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Story implemented, committed, and pushed to \`$BRANCH\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️ No changes were generated by the agent" >> $GITHUB_STEP_SUMMARY
+          fi
