@@ -118,17 +118,42 @@ jobs:
           cat "${{ inputs.story_file }}"
           echo "=========================================="
 
-      - name: Run BMad Dev Agent via GitHub Copilot CLI
+      - name: Run BMad Dev Agent
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COPILOT_CLI_MODEL: ${{ inputs.model }}
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           STORY_FILE="${{ inputs.story_file }}"
-          STORY_BASENAME=$(basename "$STORY_FILE" .md)
-          echo "🤖 Invoking BMad dev-story skill on: $STORY_FILE"
-          gh copilot -p "dev this story $STORY_FILE: read the story file, implement all tasks and acceptance criteria, and write the code" || true
+          STORY_CONTENT=$(cat "$STORY_FILE")
+
+          # Find and read the BMad dev agent skill
+          AGENT_SKILL=$(cat ".github/skills/bmad-dev/SKILL.md" 2>/dev/null || \
+                        cat ".github/skills/bmad-master/SKILL.md" 2>/dev/null || \
+                        echo "You are a senior software developer. Implement the given story by reading all tasks and acceptance criteria and writing the code.")
+
+          echo "🤖 Invoking BMad dev agent on: $STORY_FILE"
+
+          # Call OpenAI API
+          RESPONSE=$(curl -s https://api.openai.com/v1/chat/completions \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"model\": \"${{ inputs.model }}\",
+              \"max_tokens\": 8096,
+              \"messages\": [
+                {
+                  \"role\": \"system\",
+                  \"content\": $( echo "$AGENT_SKILL" | jq -Rs . )
+                },
+                {
+                  \"role\": \"user\",
+                  \"content\": $( echo "Implement this story completely. Read all tasks and acceptance criteria and write the code:\n\n$STORY_CONTENT" | jq -Rs . )
+                }
+              ]
+            }")
+
+          # Extract response text
+          echo "$RESPONSE" | jq -r '.choices[0].message.content'
+
           echo "✅ BMad dev agent execution complete"
 
       - name: Stage all changes
