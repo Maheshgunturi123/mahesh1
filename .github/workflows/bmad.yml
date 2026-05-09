@@ -95,6 +95,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh extension install github/gh-copilot || true
 
+      - name: Install BMad
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx bmad-method install \
+            --yes \
+            --modules bmm \
+            --tools github-copilot \
+            --directory ${{ github.workspace }}
+
       - name: Configure git identity
         run: |
           git config user.name "BMad Dev Agent"
@@ -117,11 +127,8 @@ jobs:
         run: |
           STORY_FILE="${{ inputs.story_file }}"
           STORY_BASENAME=$(basename "$STORY_FILE" .md)
-
           echo "🤖 Invoking BMad dev-story skill on: $STORY_FILE"
-
           gh copilot -p "dev this story $STORY_FILE: read the story file, implement all tasks and acceptance criteria, and write the code" || true
-
           echo "✅ BMad dev agent execution complete"
 
       - name: Stage all changes
